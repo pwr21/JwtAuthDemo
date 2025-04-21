@@ -50,3 +50,4 @@ D:\Work_Thanruetai\Practice Project\JwtAuthDemo\bin\Debug\net9.0\StackExchange.R
 D:\Work_Thanruetai\Practice Project\JwtAuthDemo\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
 D:\Work_Thanruetai\Practice Project\JwtAuthDemo\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 D:\Work_Thanruetai\Practice Project\JwtAuthDemo\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+D:\Work_Thanruetai\Practice Project\JwtAuthDemo\obj\Debug\net9.0\JwtAuthDemo.sourcelink.json
