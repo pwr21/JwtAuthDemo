@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using JwtAuthDemo.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +12,6 @@ builder.Services.AddOpenApi();
 // เพิ่ม Redis Distributed Cache
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICacheService, CacheService>();
-
 
 // เพิ่มการตั้งค่า JWT Authentication
 builder.Services.AddAuthentication(options =>
@@ -32,7 +32,6 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key is not configured")))
     };
 });
-
 
 // เพิ่มการตั้งค่า CORS
 builder.Services.AddControllers();

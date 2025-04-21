@@ -1,9 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.AspNetCore.Authorization;
+using JwtAuthDemo.Models;
 
 namespace JwtAuthDemo.Controllers
 {
@@ -47,6 +48,7 @@ namespace JwtAuthDemo.Controllers
             var jwtKey = _config["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured.");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
             var expireMinutes = int.TryParse(_config["Jwt:ExpireMinutes"], out var min) ? min : 30;
 
             var token = new JwtSecurityToken(
@@ -58,11 +60,5 @@ namespace JwtAuthDemo.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-    }
-
-    public class LoginModel
-    {
-        public string? Username { get; set; }
-        public string? Password { get; set; }
     }
 }
