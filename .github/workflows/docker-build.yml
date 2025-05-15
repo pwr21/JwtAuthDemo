@@ -9,15 +9,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    # 👇 ใช้ Docker Hub repo ชื่อจริง โดยใช้จาก secrets เพื่อป้องกัน hardcode
     env:
-      IMAGE_NAME: yourdockerhubusername/jwtauthdemo
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/jwtauthdemo
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Set environment and version
         run: |
-          BRANCH_NAME=${GITHUB_REF##*/}
+          BRANCH_NAME="${GITHUB_REF##*/}"
           SHORT_SHA=$(git rev-parse --short HEAD)
+
           if [[ "$BRANCH_NAME" == "main" ]]; then
             echo "ENVIRONMENT=prod" >> $GITHUB_ENV
             echo "TAG=prod" >> $GITHUB_ENV
@@ -25,9 +30,10 @@ jobs:
             echo "ENVIRONMENT=uat" >> $GITHUB_ENV
             echo "TAG=uat" >> $GITHUB_ENV
           else
-            echo "Unsupported branch"
+            echo "Unsupported branch: $BRANCH_NAME"
             exit 1
           fi
+
           echo "VERSION=$SHORT_SHA" >> $GITHUB_ENV
 
       - name: Log in to Docker Hub
