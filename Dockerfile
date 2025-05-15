@@ -1,31 +1,28 @@
-# ===============================
-# 1️⃣ Build stage (.NET 9 SDK)
-# ===============================
+# ---------- Build stage ----------
 FROM mcr.microsoft.com/dotnet/sdk:9.0-preview AS build
 WORKDIR /src
 
-# Copy csproj and restore
-COPY *.csproj .
+# Copy csproj and restore as distinct layers
+COPY *.csproj ./
 RUN dotnet restore
 
-# Copy the rest of the source and build
-COPY . .
+# Copy everything else and build
+COPY . ./
 RUN dotnet publish -c Release -o /app/publish
 
-# ===============================
-# 2️⃣ Runtime stage (.NET 9 ASP.NET)
-# ===============================
+# ---------- Runtime stage ----------
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-preview AS runtime
 WORKDIR /app
 
-# Copy configuration files like appsettings.json
-COPY --from=build /src/appsettings*.json ./
-
-# Copy published application
+# Copy published output
 COPY --from=build /app/publish .
 
-# Set port to expose
-ENV ASPNETCORE_URLS=http://+:80
+# Copy appsettings.json (optional if it's not published)
+# COPY appsettings.json ./  <-- ปกติจะรวมอยู่ใน publish แล้ว ไม่ต้องก็ได้
 
-# Start the app
+# Define environment port and expose
+ENV ASPNETCORE_URLS=http://+:80
+EXPOSE 80
+
+# Entry point
 ENTRYPOINT ["dotnet", "JwtAuthDemo.dll"]
