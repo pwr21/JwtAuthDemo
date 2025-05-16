@@ -1,43 +1,41 @@
-# .github/workflows/develop.yml
+# .github/workflows/main.yml
 
-name: Deploy to UAT (develop branch)  # ชื่อ workflow ที่จะแสดงในหน้า Actions ของ GitHub
+name: Deploy to Production (main branch)  # ชื่อ workflow แสดงใน GitHub Actions
 
 on:
-  push:
-    branches:
-      - develop  # เริ่มทำงานเมื่อมีการ push ไปที่ branch develop
+  workflow_dispatch:  # เปิดให้กด run เองเท่านั้น (manual trigger)
 
 jobs:
-  build-and-deploy-uat:
-    runs-on: ubuntu-latest  # ใช้เครื่อง Ubuntu ล่าสุดในการรัน workflow
+  build-and-deploy-prod:
+    runs-on: ubuntu-latest  # ใช้ runner Ubuntu ล่าสุด
 
     env:
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}  # ดึงค่า Docker username จาก GitHub Secrets
-      IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/jwtauthdemo  # กำหนดชื่อ image ที่จะใช้ build
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}  # ใช้ Docker username จาก Secrets
+      IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/jwtauthdemo  # ตั้งชื่อ image
 
     steps:
-      - uses: actions/checkout@v4  # ดาวน์โหลด source code ใน repo นี้มาใช้งาน
+      - uses: actions/checkout@v4  # ดึง source code มาจาก branch main
 
-      - name: Set environment and version  # ตั้งค่าความเป็น UAT และสร้าง tag
+      - name: Set environment and version  # ตั้งค่าเป็น Production
         run: |
-          SHORT_SHA=$(git rev-parse --short HEAD)  # ดึง commit hash แบบย่อเพื่อใช้เป็นเวอร์ชัน
-          echo "ENVIRONMENT=uat" >> $GITHUB_ENV    # กำหนด environment เป็น uat
-          echo "TAG=uat" >> $GITHUB_ENV            # ตั้งชื่อ tag เป็น uat
-          echo "VERSION=$SHORT_SHA" >> $GITHUB_ENV # ตั้งค่า version เป็น commit hash
+          SHORT_SHA=$(git rev-parse --short HEAD)   # ดึง commit hash
+          echo "ENVIRONMENT=prod" >> $GITHUB_ENV    # ตั้ง environment = prod
+          echo "TAG=prod" >> $GITHUB_ENV            # ตั้ง tag = prod
+          echo "VERSION=$SHORT_SHA" >> $GITHUB_ENV  # ใช้ commit hash เป็น version
 
-      - name: Log in to Docker Hub  # ล็อกอินเข้าระบบ Docker Hub
+      - name: Log in to Docker Hub  # ล็อกอินเข้า Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build Docker image  # สร้าง Docker image จาก Dockerfile
+      - name: Build Docker image  # สร้าง Docker image
         run: |
           docker build -t $IMAGE_NAME:${{ env.TAG }} .
           docker tag $IMAGE_NAME:${{ env.TAG }} $IMAGE_NAME:${{ env.VERSION }}
           docker tag $IMAGE_NAME:${{ env.TAG }} $IMAGE_NAME:latest
 
-      - name: Push Docker image (version + tag + latest)  # อัปโหลด image ขึ้น Docker Hub
+      - name: Push Docker image (version + tag + latest)  # Push image ขึ้น Docker Hub
         run: |
           docker push $IMAGE_NAME:${{ env.TAG }}
           docker push $IMAGE_NAME:${{ env.VERSION }}
