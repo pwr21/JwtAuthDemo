@@ -1,13 +1,13 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using JwtAuthDemo.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddControllers();
 
 // เพิ่ม Redis Distributed Cache
 builder.Services.AddMemoryCache();
@@ -29,24 +29,25 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key is not configured")))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+            builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key is not configured")))
     };
 });
 
 // เพิ่มการตั้งค่า CORS
-builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAllOrigins",
         builder => builder.AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader());
+                          .AllowAnyMethod()
+                          .AllowAnyHeader());
 });
 
-// เพิ่มการตั้งค่า Swagger
+// เพิ่มการตั้งค่า Swagger (.NET 8 ใช้ Swashbuckle)
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "My API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
 });
 
 var app = builder.Build();
@@ -54,11 +55,20 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
+app.UseCors("AllowAllOrigins");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+// ตัวอย่าง WeatherForecast endpoint
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -66,22 +76,16 @@ var summaries = new[]
 
 app.MapGet("/weatherforecast", () =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
+    var forecast = Enumerable.Range(1, 5).Select(index =>
+        new WeatherForecast(
             DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
             Random.Shared.Next(-20, 55),
             summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
+        )).ToArray();
+
     return forecast;
 })
 .WithName("GetWeatherForecast");
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers();
 
 app.Run();
 
