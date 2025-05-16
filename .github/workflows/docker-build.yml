@@ -1,54 +1,41 @@
-name: Build and Push Docker Image
+# .github/workflows/main.yml
+
+name: Deploy to Production (main branch)  # ชื่อ workflow แสดงใน GitHub Actions
 
 on:
-  push:
-    branches:
-      - main
-      - develop
+  workflow_dispatch:  # เปิดให้กด run เองเท่านั้น (manual trigger)
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-and-deploy-prod:
+    runs-on: ubuntu-latest  # ใช้ runner Ubuntu ล่าสุด
 
-    # 👇 ใช้ Docker Hub repo ชื่อจริง โดยใช้จาก secrets เพื่อป้องกัน hardcode
     env:
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/jwtauthdemo
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}  # ใช้ Docker username จาก Secrets
+      IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/jwtauthdemo  # ตั้งชื่อ image
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4  # ดึง source code มาจาก branch main
 
-      - name: Set environment and version
+      - name: Set environment and version  # ตั้งค่าเป็น Production
         run: |
-          BRANCH_NAME="${GITHUB_REF##*/}"
-          SHORT_SHA=$(git rev-parse --short HEAD)
+          SHORT_SHA=$(git rev-parse --short HEAD)   # ดึง commit hash
+          echo "ENVIRONMENT=prod" >> $GITHUB_ENV    # ตั้ง environment = prod
+          echo "TAG=prod" >> $GITHUB_ENV            # ตั้ง tag = prod
+          echo "VERSION=$SHORT_SHA" >> $GITHUB_ENV  # ใช้ commit hash เป็น version
 
-          if [[ "$BRANCH_NAME" == "main" ]]; then
-            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
-            echo "TAG=prod" >> $GITHUB_ENV
-          elif [[ "$BRANCH_NAME" == "develop" ]]; then
-            echo "ENVIRONMENT=uat" >> $GITHUB_ENV
-            echo "TAG=uat" >> $GITHUB_ENV
-          else
-            echo "Unsupported branch: $BRANCH_NAME"
-            exit 1
-          fi
-
-          echo "VERSION=$SHORT_SHA" >> $GITHUB_ENV
-
-      - name: Log in to Docker Hub
+      - name: Log in to Docker Hub  # ล็อกอินเข้า Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build Docker image
+      - name: Build Docker image  # สร้าง Docker image
         run: |
           docker build -t $IMAGE_NAME:${{ env.TAG }} .
           docker tag $IMAGE_NAME:${{ env.TAG }} $IMAGE_NAME:${{ env.VERSION }}
           docker tag $IMAGE_NAME:${{ env.TAG }} $IMAGE_NAME:latest
 
-      - name: Push Docker image (version + tag + latest)
+      - name: Push Docker image (version + tag + latest)  # Push image ขึ้น Docker Hub
         run: |
           docker push $IMAGE_NAME:${{ env.TAG }}
           docker push $IMAGE_NAME:${{ env.VERSION }}
